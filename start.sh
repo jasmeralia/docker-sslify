@@ -52,34 +52,35 @@ sed -e "s/database_name_here/$WORDPRESS_DB_NAME/
   /'LOGGED_IN_SALT'/s/put your unique phrase here/$WORDPRESS_LOGGED_IN_SALT/
   /'NONCE_SALT'/s/put your unique phrase here/$WORDPRESS_NONCE_SALT/" /usr/share/nginx/www/wp-config-sample.php > /usr/share/nginx/www/wp-config.php
 
-# Download nginx helper plugin
-if [ ! -d /usr/share/nginx/www/wp-content/plugins/nginx-helper ]; then
-  curl -O `curl -i -s https://wordpress.org/plugins/nginx-helper/ | egrep -o "https://downloads.wordpress.org/plugin/[^']+"`
-  unzip -o nginx-helper.*.zip -d /usr/share/nginx/www/wp-content/plugins
-  chown -R www-data:www-data /usr/share/nginx/www/wp-content/plugins/nginx-helper
+# Download plugins
+mkdir /usr/share/nginx/www/wp-content/plugins-new
+mkdir /usr/share/nginx/www/wp-content/plugin-downloads
+if [ "x$WORDPRESS_PLUGINS" == "x" ]; then
+  plugins=(nginx-helper wordfence jetpack akismet wp-dbmanager nextgen-gallery)
+else
+  IFS=',' read -r -a plugins <<< "$WORDPRESS_PLUGINS"
 fi
 
-# Download WordFence plugin
-if [ ! -d /usr/share/nginx/www/wp-content/plugins/wordfence ]; then
-  curl -O `curl -i -s https://wordpress.org/plugins/wordfence/ | egrep -o "https://downloads.wordpress.org/plugin/[^']+"`
-  unzip -o wordfence.*.zip -d /usr/share/nginx/www/wp-content/plugins
-  chown -R www-data:www-data /usr/share/nginx/www/wp-content/plugins/wordfence
+for plugin in "${plugins[@]}"
+do
+  /wpdl.sh plugin $plugin &
+done
+
+# Download plugins
+mkdir /usr/share/nginx/www/wp-content/themes-new
+mkdir /usr/share/nginx/www/wp-content/theme-downloads
+if [ "x$WORDPRESS_THEMES" == "x" ]; then
+  themes=(twentyten twentyeleven twentytwelve twentythirteen twentyfourteen twentyfifteen twentysixteen twentyseventeen)
+else
+  IFS=',' read -r -a themes <<< "$WORDPRESS_THEMES"
 fi
 
-# Download JetPack plugin
-if [ ! -d /usr/share/nginx/www/wp-content/plugins/jetpack ]; then
-  curl -O `curl -i -s https://wordpress.org/plugins/jetpack/ | egrep -o "https://downloads.wordpress.org/plugin/[^']+"`
-  unzip -o jetpack.*.zip -d /usr/share/nginx/www/wp-content/plugins
-  chown -R www-data:www-data /usr/share/nginx/www/wp-content/plugins/jetpack
-fi
+for theme in "${themes[@]}"
+do
+  /wpdl.sh theme $theme &
+done
 
-# Download Akismet plugin
-if [ ! -d /usr/share/nginx/www/wp-content/plugins/akismet ]; then
-  curl -O `curl -i -s https://wordpress.org/plugins/akismet/ | egrep -o "https://downloads.wordpress.org/plugin/[^']+"`
-  unzip -o akismet.*.zip -d /usr/share/nginx/www/wp-content/plugins
-  chown -R www-data:www-data /usr/share/nginx/www/wp-content/plugins/akismet
-fi
-
+# Support migrating over to WPMU
 if [ "$WORDPRESS_MU_ENABLED" == "true" ]; then
   cat << ENDL >> /usr/share/nginx/www/wp-config.php
 
@@ -89,12 +90,16 @@ if [ "$WORDPRESS_MU_ENABLED" == "true" ]; then
 ENDL
 fi
 
-# Activate nginx plugin once logged in
+# Activate plugins once logged in
 cat << ENDL >> /usr/share/nginx/www/wp-config.php
+define( 'WP_AUTO_UPDATE_CORE', false );
 \$plugins = get_option( 'active_plugins' );
 if ( count( \$plugins ) === 0 ) {
   require_once(ABSPATH .'/wp-admin/includes/plugin.php');
-  \$pluginsToActivate = array( 'nginx-helper/nginx-helper.php', 'wordfence/wordfence.php', 'jetpack/jetpack.php', 'akismet/akismet.php' );
+  \$pluginsToActivate = array( 'nginx-helper/nginx-helper.php',
+                               'wordfence/wordfence.php',
+                               'jetpack/jetpack.php',
+                               'akismet/akismet.php' );
   foreach ( \$pluginsToActivate as \$plugin ) {
     if ( !in_array( \$plugin, \$plugins ) ) {
       activate_plugin( '/usr/share/nginx/www/wp-content/plugins/' . \$plugin );

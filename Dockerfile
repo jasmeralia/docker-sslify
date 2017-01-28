@@ -45,9 +45,11 @@ RUN chown -R www-data:www-data /usr/share/nginx/www
 # Wordpress Initialization and Startup Script
 ADD ./start.sh /start.sh
 RUN chmod 755 /start.sh
+ADD ./wpdl.sh /wpdl.sh
+RUN chmod 755 /wpdl.sh
 
 # private expose
-EXPOSE 80 443
+EXPOSE 80
 
 # volume for mysql database and wordpress install
 VOLUME ["/usr/share/nginx/www/wp-content"]
