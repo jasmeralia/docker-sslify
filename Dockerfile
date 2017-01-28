@@ -33,7 +33,7 @@ ADD ./nginx-site.conf /etc/nginx/sites-available/default
 # Supervisor Config
 RUN /usr/bin/easy_install supervisor
 RUN /usr/bin/easy_install supervisor-stdout
-ADD ./supervisord.conf-xenial /etc/supervisord.conf
+ADD ./supervisord.conf /etc/supervisord.conf
 
 # Install Wordpress
 ADD https://wordpress.org/latest.tar.gz /usr/share/nginx/latest.tar.gz
