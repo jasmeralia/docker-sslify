@@ -12,7 +12,7 @@ RUN apt-get update
 RUN apt-get -y upgrade
 
 # Basic Requirements
-RUN apt-get -y install nginx 
+RUN apt-get -y install nginx
 
 # nginx config
 RUN sed -i -e"s/keepalive_timeout\s*65/keepalive_timeout 2/" /etc/nginx/nginx.conf
@@ -22,16 +22,7 @@ RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 # nginx site conf
 ADD ./nginx-site.conf /etc/nginx/sites-available/default
 
-# Supervisor Config
-RUN /usr/bin/easy_install supervisor
-RUN /usr/bin/easy_install supervisor-stdout
-ADD ./supervisord.conf /etc/supervisord.conf
-
-# Startup Script
-ADD ./start.sh /start.sh
-RUN chmod 755 /start.sh
-
 # private expose
 EXPOSE 80
 
-CMD ["/bin/bash", "/start.sh"]
+CMD ["/usr/sbin/nginx"]
